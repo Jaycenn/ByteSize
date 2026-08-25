@@ -129,10 +129,15 @@ Item count, item order, and construct assignment follow PSSUQ Version 3 exactly.
 Required by the Ethical Consideration section of the manuscript:
 
 - [ ] Data Privacy Notice and informed-consent statement appear **before** any evaluation item
-- [ ] "Collect email addresses" is **OFF** (Settings → Responses)
+- [ ] Google's **"Collect email addresses" is OFF** (Settings → Responses) — identity is gathered as explicit consented fields *after* the notice instead, so no sign-in is forced and nothing is captured before the respondent has read the notice
 - [ ] Sign-in is **not** required
 - [ ] Respondents who do not consent **do not proceed** to the questionnaire
 - [ ] Both third-party processors (Google Forms, Supabase) are disclosed before consent
 - [ ] Adviser name and contact email filled in
 - [ ] Response spreadsheet linked (Responses → Link to Sheets)
-- [ ] Responses exported after collection closes, analyzed offline, working copy on a password-protected machine
+- [ ] On export, name and email are **split into a separate file** from the ratings, so the analysis file carries no identifier
+- [ ] Both files on a password-protected machine, destroyed after defense
+
+### ⚠ Manuscript revision required
+
+The instrument now collects **name and email**. The Ethical Consideration section currently states that *"respondent email addresses are not collected... so no directly identifying field is gathered at the point of response."* That sentence is no longer accurate and must be revised to state what is collected, why, that identifiers are separated from ratings before analysis, and that no participant is named in the manuscript.

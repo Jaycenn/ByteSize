@@ -74,9 +74,11 @@ function createByteSizePSSUQForm() {
         'Thank you for taking part in this evaluation. Please answer only after you have ' +
         'completed the assigned ByteSize tasks. This should take about 10 minutes.');
 
-  // Privacy posture required by the manuscript: no email collected, no sign-in.
-  // Google has changed the email-collection API more than once, so this is guarded.
-  // If it warns, switch it off by hand in Settings > Responses before distributing.
+  // Google's own "collect email" auto-captures the signed-in account, which forces every
+  // respondent to have a Google account and grabs the address before the privacy notice is
+  // read. Identity is instead gathered as explicit, consented fields AFTER the notice, so
+  // this stays off and sign-in is never required. The API has changed more than once, so
+  // the call is guarded; if it warns, switch it off by hand in Settings > Responses.
   try {
     form.setCollectEmail(false);
   } catch (e) {
@@ -115,9 +117,23 @@ function createByteSizePSSUQForm() {
   var pbProfile = form.addPageBreakItem()
       .setTitle('Respondent Profile')
       .setHelpText(
-        'These questions describe the group of respondents as a whole. They are not used ' +
-        'to identify you, and no item asks for your name, email, or any other ' +
-        'directly identifying information.');
+        'Your name and email are collected so the researchers can confirm each response ' +
+        'comes from a distinct participant, follow up if an answer needs clarification, and ' +
+        'honour a withdrawal request. They are separated from your ratings before analysis ' +
+        'and are never published. The remaining questions describe the group of respondents ' +
+        'as a whole.');
+
+  form.addTextItem()
+      .setTitle('Full name')
+      .setRequired(true);
+
+  form.addTextItem()
+      .setTitle('Email address')
+      .setValidation(FormApp.createTextValidation()
+          .setHelpText('Please enter a valid email address.')
+          .requireTextIsEmail()
+          .build())
+      .setRequired(true);
 
   form.addMultipleChoiceItem()
       .setTitle('Which best describes you?')
@@ -351,19 +367,26 @@ function buildPrivacyNotice() {
       CONFIG.contactEmail + '.',
     '',
     'DATA WE COLLECT',
-    'Only the minimum data necessary for the study: your questionnaire ratings, your optional ' +
-      'written comments, and general profile information (respondent type, age group, and how ' +
-      'often you work with large files). No sensitive personal information is collected. ' +
-      'This form does NOT collect your email address and does NOT require you to sign in, so ' +
-      'no directly identifying field is gathered at the point of response.',
+    'Only the minimum data necessary for the study: your name and email address, which you ' +
+      'provide on the next page; your questionnaire ratings; your written comments; and ' +
+      'general profile information (respondent type, age group, and how often you work with ' +
+      'large files). No sensitive personal information is collected.',
+    'Your name and email are collected for three declared purposes only: to confirm that each ' +
+      'response comes from a distinct eligible participant, to contact you if an answer needs ' +
+      'clarification, and to identify your data if you ask to withdraw it. They are not used ' +
+      'for any other purpose, are not shared with anyone outside the research team, and are ' +
+      'never published.',
     '',
-    'ANONYMITY AND CONFIDENTIALITY',
-    'Responses are reported in aggregate. No participant is identified by name in the ' +
-      'manuscript or in any appendix, and individual responses are not disclosed to other ' +
-      'participants, to faculty, or to third parties. After collection closes, responses are ' +
-      'exported and analyzed offline. The working copy is stored on a password-protected ' +
-      'machine accessible only to the researchers, and is destroyed after the study is ' +
-      'completed and defended.',
+    'CONFIDENTIALITY',
+    'Your identity is known to the researchers, but it is not published. Responses are ' +
+      'reported only in aggregate. No participant is identified by name in the manuscript or ' +
+      'in any appendix, and individual responses are not disclosed to other participants, to ' +
+      'faculty, or to third parties. When responses are exported after collection closes, ' +
+      'your name and email are separated from your ratings and held apart from the analysis ' +
+      'file, so the data actually analyzed carries no identifier. Both files are stored on a ' +
+      'password-protected machine accessible only to the researchers, and are destroyed after ' +
+      'the study is completed and defended. This form does not require you to sign in to any ' +
+      'account.',
     '',
     'THIRD-PARTY PROCESSORS (DISCLOSED BEFORE CONSENT)',
     'Two third-party services are involved, both operating infrastructure outside the ' +
