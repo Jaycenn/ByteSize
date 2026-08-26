@@ -33,7 +33,7 @@ Beyond the internal inconsistency, the objective misdescribes the standard. ISO/
 
 > The technical evaluation has two components. ISO/IEC 5055-aligned measurement is performed by automated static analysis, and expert judgment is captured through a researcher-developed questionnaire aligned with the same four characteristics. The two are reported separately and are never combined.
 >
-> Automated measurement uses open-source analysers that emit CWE identifiers: Bandit 1.9.4 for Python security and error-handling weaknesses, Flawfinder 2.0.20 for C/C++ buffer and memory weaknesses, Cppcheck 2.13 for C++ correctness and code-quality weaknesses, and Radon 6.0.1 for cyclomatic complexity and maintainability index. Findings are aggregated against the four ISO/IEC 5055 measure definitions and normalised as weaknesses per thousand lines of code. This is not an official ISO/IEC 5055 implementation, not a certification instrument, and not a substitute for a licensed conformant tool. The standard's normative weakness list is licensed; the CWE-to-measure mapping used here is researcher-assigned from the published measure definitions.
+> Automated measurement uses open-source analysers that emit CWE identifiers: Bandit 1.9.4 for Python security and error-handling weaknesses, Flawfinder 2.0.20 for C/C++ buffer and memory weaknesses, Cppcheck 2.21.0 for C++ correctness and code-quality weaknesses, and Radon 6.0.1 for cyclomatic complexity and maintainability index. Findings are aggregated against the four ISO/IEC 5055 measure definitions and normalised as weaknesses per thousand lines of code, over the scope each analyser actually covered. This is not an official ISO/IEC 5055 implementation, not a certification instrument, and not a substitute for a licensed conformant tool. The standard's normative weakness list is licensed; the CWE-to-measure mapping used here is researcher-assigned from the published measure definitions.
 
 Keep the rest of the existing paragraph unchanged — it already describes the questionnaire correctly.
 
@@ -89,15 +89,25 @@ The current manuscript ends at Ethical Consideration and has no Results chapter.
 
 > **Automated Source-Code Measurement**
 >
-> Automated detection at commit `048c2fc` returned 41 raw findings across 7,780 lines of first-party source. Fourteen findings were triaged in full: of five Bandit findings at Medium severity or above, four were false positives; of nine Flawfinder findings, five were false positives. Four defects were confirmed.
+> Automated detection at commit `048c2fc` covered 7,780 lines of first-party source: 6,620 lines of Python across 22 modules and 1,159 lines in the C++17 accelerator. The analysers returned 79 CWE-bearing findings. A further 11 Cppcheck entries at `information` severity carried no CWE and describe the analyser's own coverage limits rather than properties of the source; these were excluded from the counts rather than triaged.
 >
-> Three instances of an unchecked `malloc` return value preceding a `memcpy` (CWE-476) were identified in the native accelerator, contributing to the Reliability measure. One exported kernel accepts a buffer-length parameter and does not use it before reading from that buffer (CWE-125), contributing to Security. One benchmark utility uses a hardcoded temporary-directory fallback (CWE-377), also contributing to Security.
+> Fifty-two findings were triaged by source inspection: five Bandit findings at Medium severity or above, nine Flawfinder findings, and 38 Cppcheck findings. Thirty-one were confirmed and 21 identified as false positives. The remaining 27 Bandit findings, all below Medium severity, were not individually triaged.
 >
-> Confirmed weakness density was 0.39 per KLOC for Reliability and 0.26 per KLOC for Security. No high-severity finding survived triage.
+> **Reliability.** Three instances of an unchecked `malloc` return value preceding a `memcpy` were confirmed in the native accelerator (CWE-476). If allocation fails, the subsequent copy writes to a null pointer. Two further allocation sites in the same file perform the check correctly, making this an internal inconsistency rather than a uniform omission. Confirmed density was 0.39 per KLOC over the full 7,780-line scope.
 >
-> The four Bandit findings reporting possible SQL injection (CWE-89) were all false positives. Three arise from a helper returning one of two hardcoded literal fragments, with the user identifier passed as a bound parameter. The fourth arises from a count query assembled entirely from constant fragments; the clause containing string interpolation is appended after that query executes, and the interpolated column and direction are constrained by a seven-member allowlist and a two-valued coercion respectively.
+> **Security.** Two weaknesses were confirmed. One exported kernel accepts a buffer-length parameter and does not use it before reading four bytes from that buffer (CWE-125); the parameter name is commented out at the declaration, indicating the length was available and deliberately unused. One benchmark utility uses a hardcoded temporary-directory fallback (CWE-377). Confirmed density was 0.26 per KLOC over the full scope.
 >
-> Of the nine Flawfinder findings, all were reported as CWE-120. None of the confirmed defects was CWE-120. Triage reassigned three findings to CWE-476 and one to CWE-125, moving three of the four from the Security measure to Reliability.
+> **Performance Efficiency.** No findings. No analyser in the toolchain emits Performance Efficiency weaknesses, so this reflects absence of measurement rather than a measured absence of weaknesses, and no density is reported.
+>
+> **Maintainability.** Twenty-six of 38 Cppcheck findings were confirmed, comprising 15 instances of a reference that could be declared const and 11 old-style C casts where a C++ cast would state intent. Eight findings recommending replacement of explicit loops with standard-library algorithms were classified as false positives, on the grounds that explicit iteration in a compression kernel preserves control over early exit and iteration order and does not represent maintainability debt. Confirmed density was 22.4 per KLOC over the 1,159-line C++ scope. This figure is not comparable to the Reliability and Security densities: it is computed over the C++ accelerator alone, because no analyser in the toolchain emits maintainability CWEs for Python.
+>
+> No finding at high severity survived triage, and no memory-safety defect was confirmed in the C++ accelerator.
+>
+> **Triage Reclassification**
+>
+> Triage altered both the count and the measure assignment of findings. All four Bandit findings reporting possible SQL injection (CWE-89) were false positives: three arise from a helper returning one of two hardcoded literal fragments with the user identifier passed as a bound parameter, and the fourth from a count query assembled entirely from constant fragments, the interpolating clause being appended only after that query executes and its column and direction being constrained by a seven-member allowlist and a two-valued coercion respectively.
+>
+> All nine Flawfinder findings were reported as CWE-120. No confirmed defect was CWE-120. Triage reassigned three findings to CWE-476 and one to CWE-125, moving three of the four from the Security measure to Reliability. Cppcheck likewise reported all 38 CWE-bearing findings as CWE-398, including three uninitialised-member warnings that are properly CWE-457; those three were false positives on inspection, as the structure is constructed only by aggregate initialisation supplying every member. Measure assignment therefore cannot be taken from analyser output and was determined on inspection in every case.
 >
 > **Complexity and Maintainability Index**
 >
@@ -105,7 +115,27 @@ The current manuscript ends at Ethical Consideration and has no Results chapter.
 >
 > **Limitations of the Measurement**
 >
-> Three limitations apply. Bandit findings below Medium severity (n=27) were not individually triaged. No analyser in the toolchain emits Performance Efficiency weaknesses, so that measure returned no findings; this reflects toolchain coverage rather than a measured absence of weaknesses. The CWE-to-measure mapping is researcher-assigned from the published measure definitions rather than taken from the standard's normative list, which is licensed.
+> Five limitations apply. First, Bandit findings below Medium severity (n=27) were not individually triaged. Second, no analyser in the toolchain emits Performance Efficiency weaknesses, so that measure was not obtained. Third, maintainability weaknesses were measured on the C++ accelerator only, as no analyser in the toolchain emits maintainability CWEs for Python; Python maintainability was assessed through cyclomatic complexity and maintainability index instead, and the two forms of evidence are not combined. Fourth, Semgrep was not run, so the Python and JavaScript layers were covered for Security by Bandit alone. Fifth, the CWE-to-measure mapping is researcher-assigned from the published measure definitions rather than taken from the standard's normative list, which is licensed.
+
+### Summary table for the Results chapter
+
+| Measure | Triaged | Confirmed | Scope | Per KLOC |
+|---|---:|---:|---|---:|
+| Reliability | 9 | 3 | 7,780 lines | 0.39 |
+| Security | 14 | 2 | 7,780 lines | 0.26 |
+| Performance Efficiency | 0 | 0 | — | not measured |
+| Maintainability | 38 | 26 | 1,159 lines (C++ only) | 22.4 |
+
+Excluded: 11 Cppcheck `information` entries carrying no CWE. Untriaged: 27 Bandit findings below Medium severity.
+
+If you want a raw per-measure column as well, derive it from the retained analyser output:
+
+```powershell
+$b = Get-Content reports\bandit.json | ConvertFrom-Json
+$b.results | Group-Object {$_.issue_cwe.id} | Select-Object Name, Count | Sort-Object Count -Descending
+```
+
+Map each CWE to its measure and add the Flawfinder and Cppcheck totals. Report the raw figure only where you can state which CWEs compose it.
 
 ### Note on tense
 
@@ -122,7 +152,7 @@ New appendix, placed with the other instrument appendices.
 Contents:
 
 1. Commit hash: `048c2fc`
-2. Analyser versions: Bandit 1.9.4, Flawfinder 2.0.20, Radon 6.0.1, Cppcheck 2.13, Python 3.13.14
+2. Analyser versions: Bandit 1.9.4, Flawfinder 2.0.20, Cppcheck 2.21.0, Radon 6.0.1, Python 3.13.14
 3. Exact commands executed, with scope arguments
 4. Scope statement: 22 Python modules (6,620 lines), `afc_native.cpp` (1,159 lines)
 5. Full triage table — one row per finding: tool, reported CWE, file, line, tool severity, verdict, confirmed CWE, justification
@@ -135,6 +165,7 @@ The triage table is the substantive item. Each justification should be short eno
 
 ## Still outstanding
 
-- Cppcheck has not yet run, so **Maintainability has no weakness count**. Section 6 above reports complexity and maintainability index only. Run it and add the count before submission.
-- Semgrep has not run. If it stays unrun, add it to the limitations paragraph by name.
-- The 27 Bandit Low findings are untriaged. Either triage them or keep the limitation as written.
+- **Semgrep has not run.** It is named in the limitations paragraph above. Remove that clause if you run it and add its findings; leave it if you do not.
+- **The 27 Bandit Low findings are untriaged.** Either triage them and update the counts, or keep the limitation as written.
+- **The four confirmed defects are unfixed.** If you remediate them, change the Results wording from *"were confirmed"* to *"were confirmed and subsequently remediated at commit `<hash>`"*, and report the post-fix density alongside. A measurement that drove a fix demonstrates the method worked; a clean sheet demonstrates nothing.
+- **Track B has not started.** The Results chapter also needs the expert-panel section, reported separately from everything above.
